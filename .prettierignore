@@ -1,0 +1,7 @@
+/ssh
+/coverage
+/build
+/dist
+/node_modules
+/mail_content
+tsconfig.json

@@ -1,0 +1,51 @@
+version: '3.9'
+
+volumes:
+  db_data: {}
+
+services:
+  db:
+    platform: linux/x86_64
+    image: mysql:8.0.32
+    command:
+      - '--default-authentication-plugin=mysql_native_password'
+      - '--character-set-server=utf8mb4'
+      - '--collation-server=utf8mb4_0900_ai_ci'
+      - '--sql-mode=NO_ENGINE_SUBSTITUTION'
+      - '--log-bin-trust-function-creators=1'
+    ports:
+      - '3306:3306'
+    cap_add:
+      - SYS_NICE
+    environment:
+      - MYSQL_ROOT_PASSWORD=jeevesdbadmin
+      - MYSQL_DATABASE=admin-service_db
+      - MYSQL_USER=jeeves_user
+      - MYSQL_PASSWORD=jeeves_pass
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/mysql
+    container_name: 'admin-service-mysql'
+    logging:
+      options:
+        max-size: 5m
+    profiles:
+      - all
+      - db_awslocal
+  sqs:
+    image: localstack/localstack:0.14.3
+    environment:
+      AWS_DEFAULT_REGION: us-east-2
+      EDGE_PORT: 4566
+      SERVICES: sqs
+      DOCKER_ON_RUN: echo 'running'
+    ports:
+      - '4566:4566'
+    volumes:
+      - '${TMPDIR:-/tmp/localstack}:/tmp/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+      - './localstack-bootstrap:/docker-entrypoint-initaws.d/'
+    profiles:
+      - all
+      - db_awslocal

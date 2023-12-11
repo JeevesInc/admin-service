@@ -1,0 +1,124 @@
+name: Unit Test
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    name: Unit Test
+    runs-on: self-hosted
+    steps:
+      - name: Clean
+        run: sudo rm -rf $PWD/* $PWD/.[!.]*
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Use Node 18.18.2
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.18.2
+          registry-url: https://npm.pkg.github.com/
+          scope: '@jeevesinc'
+      - name: Get .env file
+        run: aws --region us-east-2 secretsmanager get-secret-value --secret-id /build/admin-service/env-local --query SecretString --output text > .env
+      - name: Install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.DEV_GHP_TOKEN }}
+        run: npm ci
+      - name: Unit Test
+        run: npm run test
+      - name: List
+        run: |
+          ls -lh coverage/
+          tar czf coverage.tar.gz coverage/
+          ls -lh
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: |
+            coverage.tar.gz
+      - name: Notify slack failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: JeevesInc/github-action-slack-notify-build@v1.5.0
+        with:
+          channel: github-actions-builds
+          status: FAILED
+          color: danger
+
+  codeanalysis:
+    name: Code Analysis
+    runs-on: self-hosted
+    needs: test
+    steps:
+      - name: Clean
+        run: sudo rm -rf $PWD/* $PWD/.[!.]*
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download coverage report
+        uses: actions/download-artifact@v3
+        with:
+          name: code-coverage-report
+      - name: List
+        run: |
+          ls -lh
+          tar xzf coverage.tar.gz
+          ls -lh coverage/
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - uses: JeevesInc/delete-artifact@v2
+        with:
+          name: code-coverage-report
+      - name: Notify slack failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: JeevesInc/github-action-slack-notify-build@v1.5.0
+        with:
+          channel: github-actions-builds
+          status: FAILED
+          color: danger
+
+  trufflehog:
+    name: Scan for secrets
+    runs-on: self-hosted
+    needs: [test, codeanalysis]
+    steps:
+      - name: Clean
+        run: sudo rm -rf $PWD/* $PWD/.[!.]*
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - if: github.event_name == 'pull_request'
+        name: TruffleHog PR scan
+        uses: trufflesecurity/trufflehog@v3.28.6
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug
+
+      - if: github.event_name != 'pull_request'
+        name: TruffleHog Branch scan
+        run: |
+          rm -rf .git
+          docker run -v "$PWD:/workdir" public.ecr.aws/a5v5m6q6/trufflehog:3.28.6 filesystem /workdir --fail --no-update --debug
+
+      - name: Notify slack failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: JeevesInc/github-action-slack-notify-build@v1.5.0
+        with:
+          channel: secret-scan-error
+          status: FAILED
+          color: danger
