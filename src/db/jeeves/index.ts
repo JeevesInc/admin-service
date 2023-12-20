@@ -39,3 +39,5 @@ if (config.get('env') === commonConstants.ENVIRONMENT.PRODUCTION) {
 export const { sequelize, Sequelize } = sequelizeDb.init(dbConfig);
 
 export const models = sequelizeDb.initDbModels(sequelize, Sequelize);
+
+export const constants = sequelizeDb.constants;
