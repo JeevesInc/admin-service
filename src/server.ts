@@ -41,7 +41,7 @@ export const createServer = (): express.Application => {
     controllers: [path.join(__dirname + '/api/**/*controller*')],
     middlewares: [path.join(__dirname + '/middlewares/*')],
     defaultErrorHandler: false,
-    // routePrefix: '/api',
+    routePrefix: '/api',
   };
   useExpressServer(app, routingControllersOptions);
 
