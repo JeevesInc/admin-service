@@ -1,6 +1,6 @@
 import sequelizeDb from '@jeevesinc/sequelize-db-models';
 import config from 'config';
-import commonConstants from '../../constant/common';
+import commonConstants from '../../constants/common';
 import { getLogger } from '@jeevesinc/jeeves-telemetry';
 
 const logger = getLogger();

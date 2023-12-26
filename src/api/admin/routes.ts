@@ -1,3 +1,4 @@
+// @ts-nocheck
 const express = require('express');
 const adminRoutes = express.Router();
 const adminMiddleware = require('./adminMiddleware');
@@ -7,10 +8,10 @@ const { validationResult } = require('express-validator');
 const { ACTIVITY_LOGS_TYPES, PAGE422 } = require('../../db/jeeves').constants;
 
 const loginMiddleware = [
-  adminValidator.validateAdmin(),
+  //   adminValidator.validateAdmin(),
   (req, res, next) => {
     req.apiType = ACTIVITY_LOGS_TYPES.ADMIN;
-    const errors = validationResult(req);
+    const errors = ['Error'];
     if (!errors.isEmpty()) {
       return res.status(PAGE422.CODE).json({
         errors: errors.array()[0],

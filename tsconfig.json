@@ -27,7 +27,7 @@
     "paths": {
       "@services": ["services/index"],
       "@middlewares": ["middlewares/index"],
-      "@constants": ["constant/index"],
+      "@constants": ["constants/index"],
       "@errors": ["errors/index"],
       "@utils": ["utils/index"],
       "@models": ["db/models/index"],

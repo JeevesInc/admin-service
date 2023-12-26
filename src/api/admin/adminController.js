@@ -4,7 +4,6 @@ const json2xls = require('json2xls');
 const moment = require('moment');
 const _ = require('lodash');
 const {
-  utils,
   models: {
     states: statesModel,
     cities: citiesModel,
@@ -14,6 +13,15 @@ const {
     users: usersModel,
   },
 } = global;
+
+const {
+  randNumber,
+  replaceAccents,
+  compare,
+  hash,
+  capitalizeFirstLetter,
+  fileDownloadUTCDateTimeToETFormat,
+} = require('../../utils');
 const {
   LoginRequest,
   LoginResponse,
@@ -74,7 +82,7 @@ const adminController = {};
 
 const { DOWNLOAD } = require('../../../../constants/fileUpload');
 const { parseFloat } = require('../../../../helper/utils');
-const config = require('../../../../config/config');
+const config = require('./config');
 const cronService = require('../../../cron/cronService');
 const utilsHelper = require('../../../../helper/utils');
 const {
@@ -310,8 +318,8 @@ adminController.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const admin = await adminService.getAdminByEmail(email);
-    if (!utils.empty(admin)) {
-      const forgotPasswordToken = utils.randNumber();
+    if (!_.empty(admin)) {
+      const forgotPasswordToken = randNumber();
       const updateQuery = { where: { email: email } };
       const updateData = {
         resetPasswordToken: forgotPasswordToken,
@@ -380,7 +388,7 @@ adminController.resetPassword = async (req, res) => {
         status: false,
       });
     } else {
-      const hashPassword = utils.hash(password);
+      const hashPassword = hash(password);
       const updateQuery = { where: { id: admin.id } };
       const updateData = {
         password: hashPassword,
@@ -425,8 +433,8 @@ adminController.changePassword = async (req, res) => {
         status: false,
       });
     }
-    if (utils.compare(oldPassword, passwordHash)) {
-      const hashPassword = utils.hash(newPassword);
+    if (compare(oldPassword, passwordHash)) {
+      const hashPassword = hash(newPassword);
       const updateData = { password: hashPassword };
       await adminService.updateAdmin(updateData, whereClause);
       return res.status(SUCCESSCODE.STANDARD).json({
@@ -737,7 +745,7 @@ adminController.editAdminSettings = async (req, res) => {
       } else {
         if (value.settingKey == 'DEFAULT_SPREAD_RATE') {
           if (
-            utils.empty(requestData[currentIndex].value) ||
+            _.empty(requestData[currentIndex].value) ||
             isNaN(requestData[currentIndex].value) ||
             parseFloat(requestData[currentIndex].value) < 0 ||
             parseFloat(requestData[currentIndex].value) > 100
@@ -810,7 +818,7 @@ adminController.getSpecificAdminSetting = async (req, res) => {
   try {
     const { settingKey } = req.body;
 
-    if (utils.empty(settingKey)) {
+    if (_.empty(settingKey)) {
       return res.status(ERROR400).json({
         errors: { msg: req.t('FIELD_REQUIRED', { FIELD: 'settingKey' }) },
         status: false,
@@ -962,8 +970,8 @@ adminController.updateAddress = async (req, res) => {
       cityId,
     } = req;
     const updateData = {
-      address1: utils.replaceAccents(address1),
-      address2: utils.replaceAccents(address2),
+      address1: replaceAccents(address1),
+      address2: replaceAccents(address2),
       stateId: stateId,
       cityId: cityId,
       zipcode: zipcode,
@@ -1469,7 +1477,7 @@ adminController.exportNonUsUkEurAddressList = async (req, res) => {
           'User Name': `${element.userFirstName || ''} ${element.userLastName || ''}`,
           Email: element.userEmail || '',
           'Phone Number': element.userPhoneNumber || '',
-          'User Role': element.role ? utils.capitalizeFirstLetter(element.role) : '',
+          'User Role': element.role ? capitalizeFirstLetter(element.role) : '',
           'First Name': element.shipToUserFirstName || '',
           'Last Name': element.shipToUserLastName || '',
           'Address 1': element.shipToAddress1 || '',
@@ -1479,7 +1487,7 @@ adminController.exportNonUsUkEurAddressList = async (req, res) => {
           Country: element.shipToCountry || '',
           'Zip Code': element.shipToZipCode || '',
           'Created At': element.createdAt
-            ? `${utils.fileDownloadUTCDateTimeToETFormat(element.createdAt)} ET`
+            ? `${fileDownloadUTCDateTimeToETFormat(element.createdAt)} ET`
             : '',
         });
       });
@@ -1591,15 +1599,11 @@ adminController.approvedAddressChangeRequest = async (req, res) => {
       addressChangeRequestDetails.company.companyCardServices,
     );
 
-    if (!utils.empty(addressChangeRequestDetails.address1)) {
-      addressChangeRequestDetails.address1 = utils.replaceAccents(
-        addressChangeRequestDetails.address1,
-      );
+    if (!_.empty(addressChangeRequestDetails.address1)) {
+      addressChangeRequestDetails.address1 = replaceAccents(addressChangeRequestDetails.address1);
     }
-    if (!utils.empty(addressChangeRequestDetails.address2)) {
-      addressChangeRequestDetails.address2 = utils.replaceAccents(
-        addressChangeRequestDetails.address2,
-      );
+    if (!_.empty(addressChangeRequestDetails.address2)) {
+      addressChangeRequestDetails.address2 = replaceAccents(addressChangeRequestDetails.address2);
     }
 
     let domesticAddressForCompany = false;
@@ -1703,7 +1707,7 @@ adminController.approvedAddressChangeRequest = async (req, res) => {
       zipcode: addressChangeRequestDetails.zipcode,
       countryCode: addressChangeRequestDetails.countryCode,
     };
-    if (!utils.empty(addressChangeRequestDetails.county)) {
+    if (!_.empty(addressChangeRequestDetails.county)) {
       updateCompanyAddressData.county = addressChangeRequestDetails.county;
     }
 
@@ -2551,7 +2555,7 @@ adminController.addSubAdmin = async (req, res) => {
       firstName: firstName,
       lastName: lastName,
       email: email,
-      setPasswordToken: utils.randNumber(30),
+      setPasswordToken: randNumber(30),
       roleId: roleId,
     };
     const data = await adminService.addSubAdmin(params);
@@ -2655,7 +2659,7 @@ adminController.setPassword = async (req, res) => {
         status: false,
       });
     } else {
-      const hashPassword = utils.hash(password);
+      const hashPassword = hash(password);
       const updateQuery = { where: { id: admin.id } };
       const updateData = {
         password: hashPassword,
@@ -3168,7 +3172,7 @@ adminController.inviteUsers = errorHandler.errorHandlerWrapped(async (req, res) 
   // TODO CARDS-3764: Remove blockers for creating tutuka Colombia physical cards
   const allCompanyCardServiceTypes = await userService.getAllCompanyCardServiceTypes(companyId);
 
-  if (utils.empty(companyDetails)) {
+  if (_.empty(companyDetails)) {
     return res.status(ERROR400).json({
       errors: { msg: req.t('COMPANY_NOT_FOUND') },
       status: false,
@@ -3183,7 +3187,7 @@ adminController.inviteUsers = errorHandler.errorHandlerWrapped(async (req, res) 
 
   users.forEach((element) => {
     element.companyId = companyId;
-    element.authKey = utils.randNumber(30);
+    element.authKey = randNumber(30);
     element.isSetSpendLimit = element.spendLimit ? true : false;
     element.isInvitedByAdmin = true;
     element.adminId = adminId || null;
@@ -3321,7 +3325,7 @@ adminController.editInviteUsers = errorHandler.errorHandlerWrapped(async (req, r
     where: { id: inviteId, status: STATUS.PENDING },
     attributes: ['isDelegate', 'email'],
   });
-  if (utils.empty(inviteUserData)) {
+  if (_.empty(inviteUserData)) {
     return res.status(ERROR400).json({
       errors: { msg: req.t('INVITED_USER_NOT_FOUND') },
       status: false,
@@ -3329,7 +3333,7 @@ adminController.editInviteUsers = errorHandler.errorHandlerWrapped(async (req, r
   }
 
   if (!inviteUserData.isDelegate && userData.email !== inviteUserData.email) {
-    userData.authKey = utils.randNumber(30);
+    userData.authKey = randNumber(30);
     sendMail = true;
   }
 
@@ -3393,7 +3397,7 @@ adminController.resendMailInviteUsers = errorHandler.errorHandlerWrapped(async (
   const inviteUserData = await userService.getInviteUser({
     where: { id, status: STATUS.PENDING },
   });
-  if (utils.empty(inviteUserData)) {
+  if (_.empty(inviteUserData)) {
     throw new JeevesValidationError('INVITED_USER_NOT_FOUND');
   }
 
@@ -3699,7 +3703,7 @@ adminController.updateStripeCardDetails = async (req, res) => {
   try {
     const { userId, cardHolderId, email, countryCallingCode, phoneNumber } = req.body;
     const data = { email: email };
-    if (!utils.empty(countryCallingCode) && !utils.empty(phoneNumber)) {
+    if (!_.empty(countryCallingCode) && !_.empty(phoneNumber)) {
       data.phone_number = countryCallingCode + phoneNumber;
     }
     const userCardholderData = await userService.getUserCardholder({
@@ -3800,7 +3804,7 @@ adminController.blockMerchant = async (req, res) => {
     };
     const transaction = await transactionService.findOneTransaction(transactionQuery);
     // Check if transaction is exists or not
-    if (utils.empty(transaction)) {
+    if (_.empty(transaction)) {
       return res.status(ERROR404).json({
         errors: { msg: req.t('TRANSACTION_NOT_FOUND') },
         status: false,

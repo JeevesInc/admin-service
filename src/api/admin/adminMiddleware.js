@@ -1,15 +1,16 @@
 // load helper and modules
 const moment = require('moment');
 const uuid = require('uuid/v4');
-const utils = require('../../../../helper/utils');
 const {
   validateSpendLimitForTutukaProcessors,
   isCardServiceTypeTutuka,
-} = require('../../../../helper/cardUtils');
-const { ERROR400, SERVERERROR, PAGE404, PAGE422 } = require('../../../../constants/common');
+} = require('../../utils/card-utils');
+const { ERROR400, SERVERERROR, PAGE404, PAGE422 } = require('../../constants');
 const userService = require('../../web/user/userService');
 const adminMiddleware = {};
-const { ROLE, STATUS, ADMIN_SETTINGS_KEYS, WAITLIST_STATUS } = require('../../../../db').constants;
+const { ROLE, STATUS, ADMIN_SETTINGS_KEYS, WAITLIST_STATUS, ACTIVITY_LOGS_TYPES } =
+  require('../../db/jeeves').constants;
+const _ = require('lodash');
 
 const { logger } = require('../../../../config/logger');
 const commonService = require('../../web/common/commonService');
@@ -24,7 +25,7 @@ adminMiddleware.emailDoesNotExists = async (req, res, next) => {
   try {
     const { email } = req.body;
     const admin = await adminService.getAdminByEmail(email);
-    if (utils.empty(admin)) {
+    if (_.empty(admin)) {
       return res.status(ERROR400).json({
         errors: { msg: req.t("USER_DOESN'T EXISTS") },
         status: false,
@@ -52,7 +53,7 @@ adminMiddleware.emailExist = async (req, res, next) => {
   try {
     const { email } = req.body;
     const admin = await adminService.getAdminByEmail(email);
-    if (!utils.empty(admin)) {
+    if (!_.empty(admin)) {
       return res.status(ERROR400).json({
         errors: { msg: req.t('USER_EMAIL_EXISTS') },
         status: false,
@@ -289,7 +290,7 @@ adminMiddleware.emailExistsInArray = async (req, res, next) => {
         where: { email: element.email },
         attributes: ['id'],
       });
-      if (!utils.empty(user)) {
+      if (!_.empty(user)) {
         if (existsUsers.indexOf(element.email) === -1) {
           existsUsers.push(element.email);
         }
@@ -298,7 +299,7 @@ adminMiddleware.emailExistsInArray = async (req, res, next) => {
         where: { email: element.email },
         attributes: ['id'],
       });
-      if (!utils.empty(user)) {
+      if (!_.empty(user)) {
         if (existsUsers.indexOf(element.email) === -1) {
           existsUsers.push(element.email);
         }
@@ -307,7 +308,7 @@ adminMiddleware.emailExistsInArray = async (req, res, next) => {
         where: { email: element.email },
         attributes: ['id'],
       });
-      if (!utils.empty(user)) {
+      if (!_.empty(user)) {
         if (existsUsers.indexOf(element.email) === -1) {
           existsUsers.push(element.email);
         }
@@ -518,7 +519,7 @@ adminMiddleware.emailDeletedButExists = async (req, res, next) => {
         atributes: ['deletedAt'],
         paranoid: false,
       });
-      if (!utils.empty(userData)) {
+      if (!_.empty(userData)) {
         deletedDate = moment(new Date(userData.deletedAt));
         if (deletedDate > compareDate) {
           existsUsers.push(element.email);
@@ -586,7 +587,7 @@ adminMiddleware.emailDeletedButExistsEditInviteUser = async (req, res, next) => 
       atributes: ['deletedAt'],
       paranoid: false,
     });
-    if (!utils.empty(userData)) {
+    if (!_.empty(userData)) {
       deletedDate = moment(new Date(userData.deletedAt));
       if (deletedDate > compareDate) {
         return res.status(ERROR400).json({
@@ -633,7 +634,7 @@ adminMiddleware.emailExistsEditInviteUser = async (req, res, next) => {
       where: { email: email },
       attributes: ['id'],
     });
-    if (!utils.empty(user)) {
+    if (!_.empty(user)) {
       isUserExist = true;
     }
 
@@ -641,14 +642,14 @@ adminMiddleware.emailExistsEditInviteUser = async (req, res, next) => {
       where: { email: email, id: { [Op.ne]: inviteId } },
       attributes: ['id'],
     });
-    if (!utils.empty(user)) {
+    if (!_.empty(user)) {
       isUserExist = true;
     }
     user = await adminService.findOneUser({
       where: { email: email },
       attributes: ['id'],
     });
-    if (!utils.empty(user)) {
+    if (!_.empty(user)) {
       isUserExist = true;
     }
     if (isUserExist) {
@@ -753,7 +754,7 @@ adminMiddleware.checkIfEmailExist = async (req, res, next) => {
         },
         paranoid: false,
       });
-      if (!utils.empty(deletedUser)) {
+      if (!_.empty(deletedUser)) {
         deletedDate = moment(new Date(deletedUser.deletedAt));
         if (deletedDate > compareDate) {
           existsUsers.push(email);

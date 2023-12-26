@@ -10,7 +10,7 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.ts'],
   coveragePathIgnorePatterns: [
-    'src/constant/',
+    'src/constants/',
     'src/db/',
     'src/main.ts',
     'src/start-workers.ts',
@@ -25,7 +25,7 @@ module.exports = {
     },
   },
   moduleNameMapper: {
-    '^@constants': '<rootDir>/src/constant/index',
+    '^@constants': '<rootDir>/src/constants/index',
     '^@errors': '<rootDir>/src/errors/index',
     '^@middlewares': '<rootDir>/src/middlewares/index',
     '^@models': '<rootDir>/src/db/models/index',

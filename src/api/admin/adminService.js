@@ -1200,7 +1200,7 @@ adminService.getNonUsUkEurAddressList = async (
         [CARD_SERVICE_TYPE.STRIPEUS, CARD_SERVICE_TYPE.STRIPEUK, CARD_SERVICE_TYPE.STRIPEEUR],
         cardServiceType,
       ) &&
-      !utils.empty(element.stripeCardId)
+      !_.empty(element.stripeCardId)
     ) {
       const cardData = await adminService.getCard({
         where: {
@@ -1210,7 +1210,7 @@ adminService.getNonUsUkEurAddressList = async (
         paranoid: false,
       });
 
-      if (!utils.empty(cardData.cardServiceType)) {
+      if (!_.empty(cardData.cardServiceType)) {
         cardServiceType = cardData.cardServiceType;
       }
     }
